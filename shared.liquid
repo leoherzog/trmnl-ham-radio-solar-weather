@@ -1,0 +1,262 @@
+{% comment %}
+Ham Radio Solar Weather — renders hamqsl.com/solarxml.php solar-terrestrial data.
+
+Data source: single Polling URL (http://www.hamqsl.com/solarxml.php), content-type
+text/xml. TRMNL parses XML with Hash.from_xml, so the merge variables live under
+`solar.solardata.*`. Elements that carry attributes expose their text as the
+`__content__` key (e.g. each band/phenomenon), and repeated siblings become arrays.
+
+All rendering lives here; the four size files are thin wrappers that
+{% raw %}{% render 'main', ... %}{% endraw %} with a `layout_size` argument so every size shares one
+source of truth.
+{% endcomment %}
+
+{% comment %} ---- condition badge: maps an HF band rating to a styled label ---- {% endcomment %}
+{% template cond_badge %}
+{%- assign c = cond | strip -%}
+{%- case c -%}
+{%- when 'Good' -%}<span class="label label--small label--inverted 4bit:label--outline no-shrink">{{ c }}</span>
+{%- when 'Fair' -%}<span class="label label--small label--outline no-shrink">{{ c }}</span>
+{%- else -%}<span class="label label--small no-shrink">{{ c | default: 'N/A' }}</span>
+{%- endcase -%}
+{% endtemplate %}
+
+{% comment %} ---- VHF badge: open phenomena emphasized, closed muted ---- {% endcomment %}
+{% template vhf_badge %}
+{%- assign c = cond | strip -%}
+{%- if c contains 'Closed' or c == blank -%}<span class="label label--small no-shrink">{{ c | default: 'N/A' }}</span>
+{%- else -%}<span class="label label--small label--inverted 4bit:label--outline no-shrink">{{ c }}</span>
+{%- endif -%}
+{% endtemplate %}
+
+{% comment %} ---- HF band conditions table (day vs night per band group) ----
+The band array is ordered day(0-3) then night(4-7) in the same band order, so the
+night rating for row i is band[i + 4]. {% endcomment %}
+{% template hf_table %}
+<table class="table {{ table_size }}" data-table-limit="true">
+  <thead>
+    <tr>
+      <th><span class="title title--xsmall">Band</span></th>
+      <th><span class="title title--xsmall">Day</span></th>
+      <th><span class="title title--xsmall">Night</span></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for b in bands limit: 4 %}
+    {% assign nidx = forloop.index0 | plus: 4 %}
+    {% assign nb = bands[nidx] %}
+    <tr>
+      <td><span class="label label--small label--underline">{{ b.name }}</span></td>
+      <td>{% render 'cond_badge', cond: b['__content__'] %}</td>
+      <td>{% render 'cond_badge', cond: nb['__content__'] %}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endtemplate %}
+
+{% comment %} ---- a single label/value space-weather stat row ---- {% endcomment %}
+{% template stat_row %}
+<div class="flex flex--row justify--space-between flex--center-y gap--small">
+  <span class="label label--small no-shrink">{{ cap }}</span>
+  <span class="label label--small" data-clamp="1">{{ val }}</span>
+</div>
+{% endtemplate %}
+
+{% comment %} ---- stat card: a headline solar index (big value + caption) ---- {% endcomment %}
+{% template stat_card %}
+<div class="item"><div class="meta"></div><div class="content"><span class="value {{ value_size | default: 'value--small' }} value--tnums"{% if fit %} data-fit-value="true"{% endif %}>{{ val }}</span><span class="label {{ label_size }}">{{ cap }}</span></div></div>
+{% endtemplate %}
+
+{% comment %} ---- VHF phenomena list (friendly location names) ---- {% endcomment %}
+{% template vhf_list %}
+{% for p in vhf limit: limit %}
+{% case p.location %}
+{% when 'northern_hemi' %}{% assign loc = 'Aurora' %}
+{% when 'north_america' %}{% assign loc = 'E-Skip NA' %}
+{% when 'europe' %}{% assign loc = 'E-Skip EU' %}
+{% when 'europe_6m' %}{% assign loc = '6m EU' %}
+{% when 'europe_4m' %}{% assign loc = '4m EU' %}
+{% else %}{% assign loc = p.location | replace: '_', ' ' %}
+{% endcase %}
+<div class="flex flex--row justify--space-between flex--center-y gap--small">
+  <span class="label label--small no-shrink">{{ loc }}</span>
+  {% render 'vhf_badge', cond: p['__content__'] %}
+</div>
+{% endfor %}
+{% endtemplate %}
+
+{% comment %} ---- title bar: walkie-talkie icon, name, last-updated ---- {% endcomment %}
+{% template title_bar %}
+<div class="title_bar">
+  <svg class="image" viewBox="0 0 640 640" xmlns="http://www.w3.org/2000/svg">
+    <path opacity=".4" d="M176 200L176 320.9C176 327.1 177.4 333.2 180.2 338.8L200.4 379.2C205.4 389.2 208 400.2 208 411.4L208 504C208 517.3 218.7 528 232 528L408 528C421.3 528 432 517.3 432 504L432 411.3C432 400.1 434.6 389.1 439.6 379.1L459.8 338.7C462.6 333.1 464 327 464 320.8L464 200C464 186.7 453.3 176 440 176L200 176C186.7 176 176 186.7 176 200zM224 248C224 234.7 234.7 224 248 224L392 224C405.3 224 416 234.7 416 248C416 261.3 405.3 272 392 272L248 272C234.7 272 224 261.3 224 248zM224 344C224 330.7 234.7 320 248 320L392 320C405.3 320 416 330.7 416 344C416 357.3 405.3 368 392 368L248 368C234.7 368 224 357.3 224 344z"/>
+    <path d="M216 32C229.3 32 240 42.7 240 56L240 128L288 128C288 110.3 302.3 96 320 96C337.7 96 352 110.3 352 128L384 128C384 110.3 398.3 96 416 96C433.7 96 448 110.3 448 128L448 128.4C484 132.4 512 162.9 512 200L512 320.9C512 334.6 508.8 348 502.7 360.3L482.5 400.7C480.8 404 480 407.7 480 411.4L480 504.1C480 543.9 447.8 576.1 408 576.1L232 576.1C192.2 576.1 160 543.9 160 504.1L160 411.4C160 407.7 159.1 404 157.5 400.7L137.3 360.2C131.2 348 128 334.6 128 320.9L128 200C128 162.9 156 132.4 192 128.4L192 56C192 42.7 202.7 32 216 32zM200 176C186.7 176 176 186.7 176 200L176 320.9C176 327.1 177.4 333.2 180.2 338.8L200.4 379.2C205.4 389.2 208 400.2 208 411.4L208 504C208 517.3 218.7 528 232 528L408 528C421.3 528 432 517.3 432 504L432 411.3C432 400.1 434.6 389.1 439.6 379.1L459.8 338.7C462.6 333.1 464 327 464 320.8L464 200C464 186.7 453.3 176 440 176L200 176zM248 224L392 224C405.3 224 416 234.7 416 248C416 261.3 405.3 272 392 272L248 272C234.7 272 224 261.3 224 248C224 234.7 234.7 224 248 224zM248 320L392 320C405.3 320 416 330.7 416 344C416 357.3 405.3 368 392 368L248 368C234.7 368 224 357.3 224 344C224 330.7 234.7 320 248 320z"/>
+  </svg>
+  {% if layout_size == 'full' or layout_size == 'half-horizontal' %}
+  <span class="title">{{ trmnl.plugin_settings.instance_name | default: 'Ham Radio Solar Weather' }}</span>
+  {% endif %}
+  {% if updated_display %}
+  <span class="instance">Updated {{ updated_display }}</span>
+  {% endif %}
+</div>
+{% endtemplate %}
+
+{% template main %}
+{% comment %} time mask: respect the 12/24-hour custom field {% endcomment %}
+{% if trmnl.plugin_settings.custom_fields_values.timemode == '24_hour' %}
+{% assign mask_datetime = '%-m/%-d %H:%M' %}
+{% else %}
+{% assign mask_datetime = '%-m/%-d %-I:%M%P' %}
+{% endif %}
+
+{% assign sd = solar.solardata %}
+
+{% comment %} Parse hamqsl's "DD Mon YYYY HHMM GMT" stamp into a localized display.
+The HHMM time has no colon, so split and reinsert one before parsing. {% endcomment %}
+{% assign updated_display = nil %}
+{% if sd.updated %}
+{% assign u_parts = sd.updated | strip | split: ' ' %}
+{% assign u_time = u_parts[3] %}
+{% assign u_hh = u_time | slice: 0, 2 %}
+{% assign u_mm = u_time | slice: 2, 2 %}
+{% capture u_norm %}{{ u_parts[0] }} {{ u_parts[1] }} {{ u_parts[2] }} {{ u_hh }}:{{ u_mm }} {{ u_parts[4] }}{% endcapture %}
+{% assign updated_iso = u_norm | date: "%s" | plus: trmnl.user.utc_offset | date: "%Y-%m-%dT%H:%M:%S%z" %}
+{% assign updated_display = updated_iso | l_date: mask_datetime, trmnl.user.locale %}
+{% endif %}
+
+{% if sd == blank %}
+{%- comment -%} Empty state: no solar data parsed {%- endcomment -%}
+<div class="layout layout--center">
+  <span class="label label--gray lg:label--large text--center">No Solar Weather Data</span>
+</div>
+
+{% else %}
+{% comment %} Normalize the headline indices (hamqsl pads several with spaces) {% endcomment %}
+{% assign sfi = sd.solarflux | strip | default: '—' %}
+{% assign sn = sd.sunspots | strip | default: '—' %}
+{% assign aidx = sd.aindex | strip | default: '—' %}
+{% assign kidx = sd.kindex | strip | default: '—' %}
+{% assign xray = sd.xray | strip | default: '—' %}
+{% assign swind = sd.solarwind | strip | default: '—' %}
+{% assign bz = sd.magneticfield | strip | default: '—' %}
+{% assign aurora = sd.aurora | strip | default: '—' %}
+{% assign latdeg = sd.latdegree | strip %}
+{% assign geomag = sd.geomagfield | strip | default: '—' %}
+{% assign signoise = sd.signalnoise | strip | default: '—' %}
+{% assign bands = sd.calculatedconditions.band %}
+{% assign vhf = sd.calculatedvhfconditions.phenomenon %}
+
+{% case layout_size %}
+
+{% comment %} ================= FULL (800x480) ================= {% endcomment %}
+{% when 'full' %}
+<div class="layout layout--col gap--medium">
+  <div class="grid grid--cols-6 gap--small">
+    {% render 'stat_card', val: sfi, cap: 'Solar Flux', value_size: 'value--medium', fit: true %}
+    {% render 'stat_card', val: sn, cap: 'Sunspots', value_size: 'value--medium', fit: true %}
+    {% render 'stat_card', val: aidx, cap: 'A-Index', value_size: 'value--medium', fit: true %}
+    {% render 'stat_card', val: kidx, cap: 'K-Index', value_size: 'value--medium', fit: true %}
+    {% render 'stat_card', val: xray, cap: 'X-Ray', value_size: 'value--medium', fit: true %}
+    {% render 'stat_card', val: swind, cap: 'Solar Wind', value_size: 'value--medium', fit: true %}
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="grid grow gap--large">
+    <div class="col--span-8 flex flex--col gap--small h--full">
+      <span class="label label--large">HF Band Conditions</span>
+      {% render 'hf_table', bands: bands, table_size: 'table--base lg:table--large' %}
+    </div>
+    <div class="col--span-4 flex flex--col justify--space-between h--full">
+      <span class="label label--large">Space Weather</span>
+      {% capture aurora_val %}{{ aurora }}{% if latdeg != blank %} / {{ latdeg }}°{% endif %}{% endcapture %}
+      {% render 'stat_row', cap: 'Geomag', val: geomag %}
+      {% render 'stat_row', cap: 'Bz', val: bz %}
+      {% render 'stat_row', cap: 'Aurora', val: aurora_val %}
+      {% render 'stat_row', cap: 'Sig/Noise', val: signoise %}
+      {% if vhf %}
+      <span class="label label--large">VHF</span>
+      {% render 'vhf_list', vhf: vhf, limit: 5 %}
+      {% endif %}
+    </div>
+  </div>
+
+  {% comment %} lg-only: fill the V2/X screen with a clutter-free whole-earth day/night terminator map {% endcomment %}
+  <div class="hidden lg:flex flex--col gap--small h--[34cqh]">
+    <div class="flex flex--center-x flex--center-y grow">
+      <img class="image image-dither image--contain h--full" src="https://www.universemonitor.com/files/earth/terminator_720x360.png" alt="Day/night terminator map (whole-earth projection)">
+    </div>
+  </div>
+</div>
+
+{% comment %} ============ HALF-HORIZONTAL (800x240) ============ {% endcomment %}
+{% when 'half-horizontal' %}
+<div class="layout layout--col">
+  <div class="grid gap--large grow">
+    <div class="col--span-5 flex flex--row gap--large">
+      <div class="flex flex--col justify--center gap--small grow">
+        {% render 'stat_card', val: sfi, cap: 'Solar Flux', label_size: 'label--small', fit: true %}
+        {% render 'stat_card', val: aidx, cap: 'A-Index', label_size: 'label--small', fit: true %}
+        {% render 'stat_card', val: xray, cap: 'X-Ray', label_size: 'label--small', fit: true %}
+      </div>
+      <div class="flex flex--col justify--center gap--small grow">
+        {% render 'stat_card', val: sn, cap: 'Sunspots', label_size: 'label--small', fit: true %}
+        {% render 'stat_card', val: kidx, cap: 'K-Index', label_size: 'label--small', fit: true %}
+        {% render 'stat_card', val: swind, cap: 'Solar Wind', label_size: 'label--small', fit: true %}
+      </div>
+    </div>
+    <div class="col--span-7 flex flex--col gap--small">
+      <span class="label label--large">HF Band Conditions</span>
+      {% render 'hf_table', bands: bands, table_size: 'table--small lg:table--large' %}
+    </div>
+  </div>
+</div>
+
+{% comment %} ============= HALF-VERTICAL (400x480) ============= {% endcomment %}
+{% when 'half-vertical' %}
+<div class="layout layout--col gap--small">
+  <div class="grid grid--cols-2 gap--small">
+    {% render 'stat_card', val: sfi, cap: 'Solar Flux', label_size: 'label--small', fit: true %}
+    {% render 'stat_card', val: sn, cap: 'Sunspots', label_size: 'label--small', fit: true %}
+    {% render 'stat_card', val: aidx, cap: 'A-Index', label_size: 'label--small', fit: true %}
+    {% render 'stat_card', val: kidx, cap: 'K-Index', label_size: 'label--small', fit: true %}
+    {% render 'stat_card', val: xray, cap: 'X-Ray', label_size: 'label--small', fit: true %}
+    {% render 'stat_card', val: swind, cap: 'Solar Wind', label_size: 'label--small', fit: true %}
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="flex flex--col gap--small grow">
+    <span class="label label--large">HF Band Conditions</span>
+    {% render 'hf_table', bands: bands, table_size: 'table--base' %}
+  </div>
+</div>
+
+{% comment %} ================ QUADRANT (400x240) ================ {% endcomment %}
+{% when 'quadrant' %}
+<div class="layout layout--col gap--space-between">
+  <div class="grid grid--cols-4 gap--small">
+    {% render 'stat_card', val: sfi, cap: 'SFI', label_size: 'label--xsmall' %}
+    {% render 'stat_card', val: sn, cap: 'Sunspots', label_size: 'label--xsmall' %}
+    {% render 'stat_card', val: aidx, cap: 'A-Index', label_size: 'label--xsmall' %}
+    {% render 'stat_card', val: kidx, cap: 'K-Index', label_size: 'label--xsmall' %}
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="flex flex--row justify--space-between gap--small">
+    {% for b in bands limit: 4 %}
+    <div class="flex flex--col flex--center-x gap--small">
+      <span class="label label--xsmall label--underline">{{ b.name | replace: 'm', '' }}</span>
+      {% render 'cond_badge', cond: b['__content__'] %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+{% endcase %}
+{% endif %}
+
+{% render 'title_bar', trmnl: trmnl, layout_size: layout_size, updated_display: updated_display %}
+{% endtemplate %}

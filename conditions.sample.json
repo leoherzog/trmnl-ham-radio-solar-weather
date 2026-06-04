@@ -1,0 +1,51 @@
+{
+  "solar": {
+    "solardata": {
+      "source": {
+        "url": "http://www.hamqsl.com/solar.html",
+        "__content__": "N0NBH"
+      },
+      "updated": " 04 Jun 2026 1623 GMT",
+      "solarflux": "147",
+      "aindex": " 10",
+      "kindex": " 1",
+      "kindexnt": "No Report",
+      "xray": "C1.2",
+      "sunspots": "162",
+      "heliumline": "124.6",
+      "protonflux": "399",
+      "electonflux": "2180",
+      "aurora": " 1",
+      "normalization": "1.99",
+      "latdegree": "67.5",
+      "solarwind": "420.5",
+      "magneticfield": "  0.8",
+      "geomagfield": "VR QUIET",
+      "signalnoise": "S0-S1",
+      "fof2": null,
+      "muffactor": null,
+      "muf": "NoRpt",
+      "calculatedconditions": {
+        "band": [
+          { "name": "80m-40m", "time": "day", "__content__": "Fair" },
+          { "name": "30m-20m", "time": "day", "__content__": "Good" },
+          { "name": "17m-15m", "time": "day", "__content__": "Good" },
+          { "name": "12m-10m", "time": "day", "__content__": "Fair" },
+          { "name": "80m-40m", "time": "night", "__content__": "Good" },
+          { "name": "30m-20m", "time": "night", "__content__": "Good" },
+          { "name": "17m-15m", "time": "night", "__content__": "Good" },
+          { "name": "12m-10m", "time": "night", "__content__": "Poor" }
+        ]
+      },
+      "calculatedvhfconditions": {
+        "phenomenon": [
+          { "name": "vhf-aurora", "location": "northern_hemi", "__content__": "Band Closed" },
+          { "name": "E-Skip", "location": "europe", "__content__": "Band Closed" },
+          { "name": "E-Skip", "location": "north_america", "__content__": "Band Closed" },
+          { "name": "E-Skip", "location": "europe_6m", "__content__": "50MHz ES" },
+          { "name": "E-Skip", "location": "europe_4m", "__content__": "70MHz ES" }
+        ]
+      }
+    }
+  }
+}
