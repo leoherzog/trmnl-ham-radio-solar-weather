@@ -15,17 +15,17 @@ source of truth.
 {% template cond_badge %}
 {%- assign c = cond | strip -%}
 {%- case c -%}
-{%- when 'Good' -%}<span class="label label--small label--inverted 4bit:label--outline no-shrink">{{ c }}</span>
-{%- when 'Fair' -%}<span class="label label--small label--outline no-shrink">{{ c }}</span>
-{%- else -%}<span class="label label--small no-shrink">{{ c | default: 'N/A' }}</span>
+{%- when 'Good' -%}<span class="label label--small lg:label--large label--inverted 4bit:label--outline no-shrink">{{ c }}</span>
+{%- when 'Fair' -%}<span class="label label--small lg:label--large label--outline no-shrink">{{ c }}</span>
+{%- else -%}<span class="label label--small lg:label--large no-shrink">{{ c | default: 'N/A' }}</span>
 {%- endcase -%}
 {% endtemplate %}
 
 {% comment %} ---- VHF badge: open phenomena emphasized, closed muted ---- {% endcomment %}
 {% template vhf_badge %}
 {%- assign c = cond | strip -%}
-{%- if c contains 'Closed' or c == blank -%}<span class="label label--small no-shrink">{{ c | default: 'N/A' }}</span>
-{%- else -%}<span class="label label--small label--inverted 4bit:label--outline no-shrink">{{ c }}</span>
+{%- if c contains 'Closed' or c == blank -%}<span class="label label--small lg:label--large no-shrink">{{ c | default: 'N/A' }}</span>
+{%- else -%}<span class="label label--small lg:label--large label--inverted 4bit:label--outline no-shrink">{{ c }}</span>
 {%- endif -%}
 {% endtemplate %}
 
@@ -46,7 +46,7 @@ night rating for row i is band[i + 4]. {% endcomment %}
     {% assign nidx = forloop.index0 | plus: 4 %}
     {% assign nb = bands[nidx] %}
     <tr>
-      <td><span class="label label--small label--underline">{{ b.name }}</span></td>
+      <td><span class="label label--small lg:label--large label--underline">{{ b.name }}</span></td>
       <td>{% render 'cond_badge', cond: b['__content__'] %}</td>
       <td>{% render 'cond_badge', cond: nb['__content__'] %}</td>
     </tr>
@@ -65,7 +65,7 @@ night rating for row i is band[i + 4]. {% endcomment %}
 
 {% comment %} ---- stat card: a headline solar index (big value + caption) ---- {% endcomment %}
 {% template stat_card %}
-<div class="item"><div class="meta"></div><div class="content"><span class="value {{ value_size | default: 'value--small' }} value--tnums"{% if fit %} data-fit-value="true"{% endif %}>{{ val }}</span><span class="label {{ label_size }}">{{ cap }}</span></div></div>
+<div class="item"><div class="meta"></div><div class="content"><span class="value {{ value_size | default: 'value--small' }}{% if lg_value_size %} lg:{{ lg_value_size }}{% endif %} value--tnums"{% if fit %} data-fit-value="true"{% endif %}>{{ val }}</span><span class="label {{ label_size }}{% if lg_label_size %} lg:{{ lg_label_size }}{% endif %}">{{ cap }}</span></div></div>
 {% endtemplate %}
 
 {% comment %} ---- VHF phenomena list (friendly location names) ---- {% endcomment %}
@@ -163,7 +163,9 @@ The HHMM time has no colon, so split and reinsert one before parsing. {% endcomm
 
   <div class="divider"></div>
 
-  <div class="grid grow gap--large">
+  {% comment %} grow on OG (no map) so the two zones fill the 480px screen; lg:grow-0 on V2/X
+  lets the zones size to their content so the map below can claim the leftover height. {% endcomment %}
+  <div class="grid grow lg:grow-0 gap--large">
     <div class="col--span-8 flex flex--col gap--small h--full">
       <span class="label label--large">HF Band Conditions</span>
       {% render 'hf_table', bands: bands, table_size: 'table--base lg:table--large' %}
@@ -182,11 +184,13 @@ The HHMM time has no colon, so split and reinsert one before parsing. {% endcomm
     </div>
   </div>
 
-  {% comment %} lg-only: fill the V2/X screen with a clutter-free whole-earth day/night terminator map {% endcomment %}
-  <div class="hidden lg:flex flex--col gap--small h--[34cqh]">
-    <div class="flex flex--center-x flex--center-y grow">
-      <img class="image image-dither image--contain h--full" src="https://www.universemonitor.com/files/earth/terminator_720x360.png" alt="Day/night terminator map (whole-earth projection)">
-    </div>
+  {% comment %} lg-only (V2/X): a clutter-free whole-earth day/night terminator map. `.layout` is
+  overflow:hidden and centers its children, so any column taller than the screen clips the top stats.
+  `stretch` (flex:1 1 0%; min-height:0) makes this band grow into the leftover height AND shrink to
+  fit — it can never push content off-screen. The image fills that space with h--full + w--auto
+  (aspect kept). On OG (≤800px) the band is `hidden`, so OG renders exactly as before. {% endcomment %}
+  <div class="hidden lg:flex flex--row stretch">
+    <img class="image image-dither image--contain h--full w--auto" src="https://www.universemonitor.com/files/earth/terminator_720x360.png" alt="Day/night terminator map (whole-earth projection)">
   </div>
 </div>
 
@@ -196,14 +200,14 @@ The HHMM time has no colon, so split and reinsert one before parsing. {% endcomm
   <div class="grid gap--large grow">
     <div class="col--span-5 flex flex--row gap--large">
       <div class="flex flex--col justify--center gap--small grow">
-        {% render 'stat_card', val: sfi, cap: 'Solar Flux', label_size: 'label--small', fit: true %}
-        {% render 'stat_card', val: aidx, cap: 'A-Index', label_size: 'label--small', fit: true %}
-        {% render 'stat_card', val: xray, cap: 'X-Ray', label_size: 'label--small', fit: true %}
+        {% render 'stat_card', val: sfi, cap: 'Solar Flux', label_size: 'label--small', lg_value_size: 'value--large', lg_label_size: 'label--base', fit: true %}
+        {% render 'stat_card', val: aidx, cap: 'A-Index', label_size: 'label--small', lg_value_size: 'value--large', lg_label_size: 'label--base', fit: true %}
+        {% render 'stat_card', val: xray, cap: 'X-Ray', label_size: 'label--small', lg_value_size: 'value--large', lg_label_size: 'label--base', fit: true %}
       </div>
       <div class="flex flex--col justify--center gap--small grow">
-        {% render 'stat_card', val: sn, cap: 'Sunspots', label_size: 'label--small', fit: true %}
-        {% render 'stat_card', val: kidx, cap: 'K-Index', label_size: 'label--small', fit: true %}
-        {% render 'stat_card', val: swind, cap: 'Solar Wind', label_size: 'label--small', fit: true %}
+        {% render 'stat_card', val: sn, cap: 'Sunspots', label_size: 'label--small', lg_value_size: 'value--large', lg_label_size: 'label--base', fit: true %}
+        {% render 'stat_card', val: kidx, cap: 'K-Index', label_size: 'label--small', lg_value_size: 'value--large', lg_label_size: 'label--base', fit: true %}
+        {% render 'stat_card', val: swind, cap: 'Solar Wind', label_size: 'label--small', lg_value_size: 'value--large', lg_label_size: 'label--base', fit: true %}
       </div>
     </div>
     <div class="col--span-7 flex flex--col gap--small">
@@ -217,19 +221,19 @@ The HHMM time has no colon, so split and reinsert one before parsing. {% endcomm
 {% when 'half-vertical' %}
 <div class="layout layout--col gap--small">
   <div class="grid grid--cols-2 gap--small">
-    {% render 'stat_card', val: sfi, cap: 'Solar Flux', label_size: 'label--small', fit: true %}
-    {% render 'stat_card', val: sn, cap: 'Sunspots', label_size: 'label--small', fit: true %}
-    {% render 'stat_card', val: aidx, cap: 'A-Index', label_size: 'label--small', fit: true %}
-    {% render 'stat_card', val: kidx, cap: 'K-Index', label_size: 'label--small', fit: true %}
-    {% render 'stat_card', val: xray, cap: 'X-Ray', label_size: 'label--small', fit: true %}
-    {% render 'stat_card', val: swind, cap: 'Solar Wind', label_size: 'label--small', fit: true %}
+    {% render 'stat_card', val: sfi, cap: 'Solar Flux', label_size: 'label--small', lg_value_size: 'value--large', lg_label_size: 'label--base', fit: true %}
+    {% render 'stat_card', val: sn, cap: 'Sunspots', label_size: 'label--small', lg_value_size: 'value--large', lg_label_size: 'label--base', fit: true %}
+    {% render 'stat_card', val: aidx, cap: 'A-Index', label_size: 'label--small', lg_value_size: 'value--large', lg_label_size: 'label--base', fit: true %}
+    {% render 'stat_card', val: kidx, cap: 'K-Index', label_size: 'label--small', lg_value_size: 'value--large', lg_label_size: 'label--base', fit: true %}
+    {% render 'stat_card', val: xray, cap: 'X-Ray', label_size: 'label--small', lg_value_size: 'value--large', lg_label_size: 'label--base', fit: true %}
+    {% render 'stat_card', val: swind, cap: 'Solar Wind', label_size: 'label--small', lg_value_size: 'value--large', lg_label_size: 'label--base', fit: true %}
   </div>
 
   <div class="divider"></div>
 
   <div class="flex flex--col gap--small grow">
     <span class="label label--large">HF Band Conditions</span>
-    {% render 'hf_table', bands: bands, table_size: 'table--base' %}
+    {% render 'hf_table', bands: bands, table_size: 'table--base lg:table--large' %}
   </div>
 </div>
 
@@ -237,10 +241,10 @@ The HHMM time has no colon, so split and reinsert one before parsing. {% endcomm
 {% when 'quadrant' %}
 <div class="layout layout--col gap--space-between">
   <div class="grid grid--cols-4 gap--small">
-    {% render 'stat_card', val: sfi, cap: 'SFI', label_size: 'label--xsmall' %}
-    {% render 'stat_card', val: sn, cap: 'Sunspots', label_size: 'label--xsmall' %}
-    {% render 'stat_card', val: aidx, cap: 'A-Index', label_size: 'label--xsmall' %}
-    {% render 'stat_card', val: kidx, cap: 'K-Index', label_size: 'label--xsmall' %}
+    {% render 'stat_card', val: sfi, cap: 'SFI', label_size: 'label--xsmall', lg_value_size: 'value--medium', lg_label_size: 'label--small' %}
+    {% render 'stat_card', val: sn, cap: 'Sunspots', label_size: 'label--xsmall', lg_value_size: 'value--medium', lg_label_size: 'label--small' %}
+    {% render 'stat_card', val: aidx, cap: 'A-Index', label_size: 'label--xsmall', lg_value_size: 'value--medium', lg_label_size: 'label--small' %}
+    {% render 'stat_card', val: kidx, cap: 'K-Index', label_size: 'label--xsmall', lg_value_size: 'value--medium', lg_label_size: 'label--small' %}
   </div>
 
   <div class="divider"></div>
@@ -248,7 +252,7 @@ The HHMM time has no colon, so split and reinsert one before parsing. {% endcomm
   <div class="flex flex--row justify--space-between gap--small">
     {% for b in bands limit: 4 %}
     <div class="flex flex--col flex--center-x gap--small">
-      <span class="label label--xsmall label--underline">{{ b.name | replace: 'm', '' }}</span>
+      <span class="label label--xsmall lg:label--small label--underline">{{ b.name | replace: 'm', '' }}</span>
       {% render 'cond_badge', cond: b['__content__'] %}
     </div>
     {% endfor %}
