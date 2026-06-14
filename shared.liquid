@@ -15,9 +15,9 @@ source of truth.
 {% template cond_badge %}
 {%- assign c = cond | strip -%}
 {%- case c -%}
-{%- when 'Good' -%}<span class="label label--small lg:label--large label--inverted 4bit:label--outline no-shrink">{{ c }}</span>
-{%- when 'Fair' -%}<span class="label label--small lg:label--large label--outline no-shrink">{{ c }}</span>
-{%- else -%}<span class="label label--small lg:label--large no-shrink">{{ c | default: 'N/A' }}</span>
+{%- when 'Good' -%}<span class="label label--base lg:label--large label--inverted 4bit:label--outline no-shrink">{{ c }}</span>
+{%- when 'Fair' -%}<span class="label label--base lg:label--large label--outline no-shrink">{{ c }}</span>
+{%- else -%}<span class="label label--base lg:label--large no-shrink">{{ c | default: 'N/A' }}</span>
 {%- endcase -%}
 {% endtemplate %}
 
@@ -46,7 +46,7 @@ night rating for row i is band[i + 4]. {% endcomment %}
     {% assign nidx = forloop.index0 | plus: 4 %}
     {% assign nb = bands[nidx] %}
     <tr>
-      <td><span class="label label--small lg:label--large label--underline">{{ b.name }}</span></td>
+      <td><span class="label label--base lg:label--large label--underline">{{ b.name }}</span></td>
       <td>{% render 'cond_badge', cond: b['__content__'] %}</td>
       <td>{% render 'cond_badge', cond: nb['__content__'] %}</td>
     </tr>
@@ -240,19 +240,19 @@ The HHMM time has no colon, so split and reinsert one before parsing. {% endcomm
 {% comment %} ================ QUADRANT (400x240) ================ {% endcomment %}
 {% when 'quadrant' %}
 <div class="layout layout--col gap--space-between">
-  <div class="grid grid--cols-4 gap--small">
-    {% render 'stat_card', val: sfi, cap: 'SFI', label_size: 'label--xsmall', lg_value_size: 'value--medium', lg_label_size: 'label--small' %}
-    {% render 'stat_card', val: sn, cap: 'Sunspots', label_size: 'label--xsmall', lg_value_size: 'value--medium', lg_label_size: 'label--small' %}
-    {% render 'stat_card', val: aidx, cap: 'A-Index', label_size: 'label--xsmall', lg_value_size: 'value--medium', lg_label_size: 'label--small' %}
-    {% render 'stat_card', val: kidx, cap: 'K-Index', label_size: 'label--xsmall', lg_value_size: 'value--medium', lg_label_size: 'label--small' %}
+  <div class="grid grid--cols-4 lg:portrait:grid--cols-2 justify--space-between gap--small">
+    {% render 'stat_card', val: sfi, cap: 'SFI', label_size: 'label--xsmall', lg_value_size: 'value--base lg:portrait:value--xlarge', lg_label_size: 'label--small lg:portrait:label--base' %}
+    {% render 'stat_card', val: sn, cap: 'Sunspots', label_size: 'label--xsmall', lg_value_size: 'value--base lg:portrait:value--xlarge', lg_label_size: 'label--small lg:portrait:label--base' %}
+    {% render 'stat_card', val: aidx, cap: 'A-Index', label_size: 'label--xsmall', lg_value_size: 'value--base lg:portrait:value--xlarge', lg_label_size: 'label--small lg:portrait:label--base' %}
+    {% render 'stat_card', val: kidx, cap: 'K-Index', label_size: 'label--xsmall', lg_value_size: 'value--base lg:portrait:value--xlarge', lg_label_size: 'label--small lg:portrait:label--base' %}
   </div>
 
   <div class="divider"></div>
 
-  <div class="flex flex--row justify--space-between gap--small">
+  <div class="grid grid--cols--4 lg:portrait:grid--cols-2 justify--space-between gap--small">
     {% for b in bands limit: 4 %}
     <div class="flex flex--col flex--center-x gap--small">
-      <span class="label label--xsmall lg:label--small label--underline">{{ b.name | replace: 'm', '' }}</span>
+      <span class="label label--xsmall lg:label--base lg:portrait:label--large label--underline">{{ b.name | replace: 'm', '' }}</span>
       {% render 'cond_badge', cond: b['__content__'] %}
     </div>
     {% endfor %}
