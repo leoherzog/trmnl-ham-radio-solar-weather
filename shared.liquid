@@ -96,33 +96,33 @@ night rating for row i is band[i + 4]. {% endcomment %}
   {% if layout_size == 'full' or layout_size == 'half-horizontal' %}
   <span class="title">{{ trmnl.plugin_settings.instance_name | default: 'Ham Radio Solar Weather' }}</span>
   {% endif %}
-  {% if updated_display %}
-  <span class="instance">Updated {{ updated_display }}</span>
+  {% if updated_ts %}
+  <span class="instance">Updated <span data-dt="{{ updated_ts }}" data-dt-style="datetime"></span></span>
   {% endif %}
 </div>
 {% endtemplate %}
 
 {% template main %}
-{% comment %} time mask: respect the 12/24-hour custom field {% endcomment %}
+{% comment %} 12/24-hour custom field drives hour12 in the Intl formatter below {% endcomment %}
 {% if trmnl.plugin_settings.custom_fields_values.timemode == '24_hour' %}
-{% assign mask_datetime = '%-m/%-d %H:%M' %}
+{% assign hour12 = 'false' %}
 {% else %}
-{% assign mask_datetime = '%-m/%-d %-I:%M%P' %}
+{% assign hour12 = 'true' %}
 {% endif %}
 
 {% assign sd = solar.solardata %}
 
-{% comment %} Parse hamqsl's "DD Mon YYYY HHMM GMT" stamp into a localized display.
-The HHMM time has no colon, so split and reinsert one before parsing. {% endcomment %}
-{% assign updated_display = nil %}
+{% comment %} Parse hamqsl's "DD Mon YYYY HHMM GMT" stamp into UTC epoch seconds; the
+client-side Intl formatter localizes it to the user's timezone. The HHMM time has no
+colon, so split and reinsert one before parsing. {% endcomment %}
+{% assign updated_ts = nil %}
 {% if sd.updated %}
 {% assign u_parts = sd.updated | strip | split: ' ' %}
 {% assign u_time = u_parts[3] %}
 {% assign u_hh = u_time | slice: 0, 2 %}
 {% assign u_mm = u_time | slice: 2, 2 %}
 {% capture u_norm %}{{ u_parts[0] }} {{ u_parts[1] }} {{ u_parts[2] }} {{ u_hh }}:{{ u_mm }} {{ u_parts[4] }}{% endcapture %}
-{% assign updated_iso = u_norm | date: "%s" | plus: trmnl.user.utc_offset | date: "%Y-%m-%dT%H:%M:%S%z" %}
-{% assign updated_display = updated_iso | l_date: mask_datetime, trmnl.user.locale %}
+{% assign updated_ts = u_norm | date: "%s" %}
 {% endif %}
 
 {% if sd == blank %}
@@ -262,5 +262,31 @@ The HHMM time has no colon, so split and reinsert one before parsing. {% endcomm
 {% endcase %}
 {% endif %}
 
-{% render 'title_bar', trmnl: trmnl, layout_size: layout_size, updated_display: updated_display %}
+{% render 'title_bar', trmnl: trmnl, layout_size: layout_size, updated_ts: updated_ts %}
+
+<script>
+(function () {
+  var locale = '{{ trmnl.user.locale }}' || undefined;
+  var timeZone = '{{ trmnl.user.time_zone_iana }}' || undefined;
+  var hour12 = {{ hour12 }};
+  function formatter(opts) {
+    opts.hour12 = hour12;
+    try {
+      return new Intl.DateTimeFormat(locale, Object.assign({ timeZone: timeZone }, opts));
+    } catch (e) {
+      {%- comment -%} Invalid locale or timezone: fall back to render-environment defaults {%- endcomment -%}
+      return new Intl.DateTimeFormat(undefined, opts);
+    }
+  }
+  var formats = {
+    datetime: formatter({ month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+  };
+  document.querySelectorAll('[data-dt]').forEach(function (el) {
+    var seconds = parseInt(el.getAttribute('data-dt'), 10);
+    if (!seconds) return;
+    var format = formats[el.getAttribute('data-dt-style')] || formats.datetime;
+    el.textContent = format.format(new Date(seconds * 1000));
+  });
+})();
+</script>
 {% endtemplate %}

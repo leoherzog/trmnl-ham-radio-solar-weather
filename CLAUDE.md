@@ -76,9 +76,17 @@ of truth. `shared.liquid` defines these `{% template %}` partials:
 ## The `updated` timestamp
 
 hamqsl formats it as `DD Mon YYYY HHMM GMT` (e.g. `04 Jun 2026 1623 GMT`). The `HHMM`
-has no colon, so `main` splits the string, reinserts a colon, then formats with
-`l_date` (locale-aware) and the user's UTC offset — same display approach as the
-`nws-severe-weather` plugin. Respects the `timemode` (12/24-hour) custom field.
+has no colon, so `main` splits the string, reinserts a colon, then parses it to **UTC
+epoch seconds** (`| date: "%s"`, no offset arithmetic). The epoch is emitted into the
+title bar as `<span data-dt="…" data-dt-style="datetime">`, and a `<script>` at the end
+of `main` localizes every `[data-dt]` element with `Intl.DateTimeFormat` — using the
+user's `locale` and `time_zone_iana` (with a try/catch fallback to render defaults for a
+bad locale/timezone). Reading the epoch from the attribute (not `textContent`) keeps the
+formatter idempotent. This is the same browser-native Intl approach as the
+`nws-severe-weather` plugin (TRMNL renders in a headless browser, so `<script>` runs).
+The `timemode` (12/24-hour) custom field forces `hour12`; the "Updated" line is shown in
+the user's **local** time (it's feed metadata, not propagation data — only band/VHF
+ratings follow the UTC convention, and those carry no clock times).
 
 ## Development Guidelines
 
